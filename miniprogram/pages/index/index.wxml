@@ -64,7 +64,7 @@
         <text class="detail-time">{{selectedMarket.updateTime}}</text>
         <text class="trend-title">近1年走势</text>
         <canvas id="market-chart" type="2d" class="market-chart"></canvas>
-        <text class="detail-explain">最近一年整体经历过上涨和回落，中间波动很正常。</text>
+        <text class="detail-explain">{{selectedMarket.detailExplain || "最近一年整体经历过上涨和回落，中间波动很正常。"}}</text>
         <view class="poll-section">
           <text class="poll-question">你觉得接下来会涨还是会跌？</text>
           <view class="poll-buttons">

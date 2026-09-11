@@ -1,20 +1,20 @@
 const weekdayNames = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
 
 const rawMarketList = [
-  { icon: "🇺🇸", name: "标普500", value: 5483.2, change: -0.6, simpleText: "昨晚跌了一点", history: [4780, 4860, 4915, 5050, 5140, 5075, 5260, 5350, 5290, 5430, 5510, 5483.2] },
-  { icon: "🇺🇸", name: "纳斯达克100", value: 18765.4, change: -1.2, simpleText: "跌得比较多", history: [15120, 15840, 16320, 17050, 17620, 17180, 18100, 18840, 18420, 19320, 19100, 18765.4] },
-  { icon: "🇺🇸", name: "道琼斯", value: 39123.6, change: -0.4, simpleText: "小幅下跌", history: [35200, 35800, 36120, 36900, 37450, 37180, 38200, 38700, 37900, 39400, 39300, 39123.6] },
-  { icon: "🇨🇳", name: "上证指数", value: 2982.1, change: 0.3, simpleText: "微微上行", history: [3050, 2980, 3015, 3070, 3150, 3085, 2960, 3010, 2890, 2940, 2972, 2982.1] },
-  { icon: "🇨🇳", name: "沪深300", value: 3321.5, change: 0.2, simpleText: "变化不大", history: [3700, 3620, 3680, 3750, 3810, 3690, 3500, 3580, 3260, 3300, 3315, 3321.5] },
-  { icon: "🟡", name: "黄金", value: 2508.4, change: 0.7, simpleText: "又贵了一些", history: [1980, 2040, 2110, 2180, 2260, 2310, 2375, 2430, 2390, 2460, 2490, 2508.4] },
-  { icon: "🛢️", name: "原油", value: 72.4, change: 2.1, simpleText: "涨得明显", history: [82, 78, 84, 80, 76, 73, 77, 70, 68, 71, 70, 72.4] },
-  { icon: "💵", name: "美元/人民币", value: 7.118, change: 0.1, simpleText: "变化不大", history: [7.18, 7.22, 7.24, 7.20, 7.16, 7.12, 7.10, 7.14, 7.11, 7.09, 7.12, 7.118] }
+  { icon: "🇺🇸", name: "标普500" },
+  { icon: "🇺🇸", name: "纳斯达克100" },
+  { icon: "🇺🇸", name: "道琼斯" },
+  { icon: "🇨🇳", name: "上证指数" },
+  { icon: "🇨🇳", name: "沪深300" },
+  { icon: "🟡", name: "黄金" },
+  { icon: "🛢️", name: "原油" },
+  { icon: "💵", name: "美元/人民币" }
 ];
 
-const historyLabels = ["2025-09", "2025-12", "2026-03", "2026-06", "2026-09"];
-const historyLabelIndices = [0, 3, 6, 9, 11];
-
 function formatValue(value) {
+  if (value === null || value === undefined || isNaN(value)) {
+    return "--";
+  }
   return value.toLocaleString("en-US", {
     minimumFractionDigits: value < 10 ? 3 : 1,
     maximumFractionDigits: value < 10 ? 3 : 1
@@ -22,6 +22,9 @@ function formatValue(value) {
 }
 
 function formatChange(change) {
+  if (change === null || change === undefined || isNaN(change)) {
+    return "--";
+  }
   return (change > 0 ? "+" : "") + change.toFixed(1) + "%";
 }
 
@@ -36,16 +39,41 @@ function getTodayLabel() {
   return (now.getMonth() + 1) + "月" + now.getDate() + "日  " + weekdayNames[now.getDay()];
 }
 
+function formatSourceDate(sourceDate) {
+  if (!sourceDate) return null;
+  let dateObj;
+  if (typeof sourceDate === "string") {
+    const parts = sourceDate.split(/[-T /]/);
+    if (parts.length >= 3) {
+      const month = parseInt(parts[1], 10);
+      const day = parseInt(parts[2], 10);
+      if (!isNaN(month) && !isNaN(day)) {
+        return `${month}月${day}日`;
+      }
+    }
+    dateObj = new Date(sourceDate);
+  } else if (sourceDate instanceof Date) {
+    dateObj = sourceDate;
+  }
+  if (dateObj && !isNaN(dateObj.getTime())) {
+    return `${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
+  }
+  return null;
+}
+
 Page({
   data: {
     dateLabel: getTodayLabel(),
-    updateTime: "08:30 更新",
+    updateTime: "数据暂未更新",
     marketList: rawMarketList.map(function (market) {
       return Object.assign({}, market, {
-        displayValue: formatValue(market.value),
-        displayChange: formatChange(market.change),
-        changeClass: getChangeClass(market.change),
-        updateTime: "08:30 更新"
+        value: null,
+        change: null,
+        simpleText: "数据加载中",
+        displayValue: "--",
+        displayChange: "--",
+        changeClass: "flat",
+        updateTime: "数据暂未更新"
       });
     }),
     todayEvent: {
@@ -60,14 +88,162 @@ Page({
     participantCount: "12,345 人参与"
   },
 
+  onShow() {
+    this.setData({
+      dateLabel: getTodayLabel()
+    });
+    this.loadMarketData();
+  },
+
+  async loadMarketData() {
+    try {
+      const db = wx.cloud.database();
+      const promises = rawMarketList.map(market => {
+        return db.collection("market_daily")
+          .where({ name: market.name })
+          .orderBy("date", "desc")
+          .limit(1)
+          .get()
+          .then(res => {
+            if (res.data && res.data.length > 0) {
+              return { name: market.name, record: res.data[0] };
+            }
+            return { name: market.name, record: null };
+          })
+          .catch(() => ({ name: market.name, record: null }));
+      });
+
+      const results = await Promise.all(promises);
+      const recordsMap = {};
+      let maxSourceDate = null;
+
+      results.forEach(item => {
+        if (item.record) {
+          recordsMap[item.name] = item.record;
+          const sDate = item.record.sourceDate || item.record.date;
+          if (sDate) {
+            if (!maxSourceDate || sDate > maxSourceDate) {
+              maxSourceDate = sDate;
+            }
+          }
+        }
+      });
+
+      let topUpdateTime = "数据暂未更新";
+      if (maxSourceDate) {
+        const formattedDate = formatSourceDate(maxSourceDate);
+        if (formattedDate) {
+          topUpdateTime = `数据截至 ${formattedDate}`;
+        }
+      }
+
+      const newMarketList = rawMarketList.map(item => {
+        const dbRecord = recordsMap[item.name];
+        let val = null;
+        let chg = null;
+        let st = "数据暂未更新";
+        let sDate = null;
+        let itemUpdateTime = "数据暂未更新";
+        let hist = null;
+        let histLabels = null;
+        let detailExplain = "最近一年整体经历过上涨和回落，中间波动很正常。";
+
+        if (dbRecord && typeof dbRecord.value === "number" && !isNaN(dbRecord.value) && dbRecord.value > 0) {
+          val = dbRecord.value;
+          if (typeof dbRecord.changePercent === "number" && !isNaN(dbRecord.changePercent)) {
+            chg = dbRecord.changePercent;
+          }
+          if (dbRecord.simpleText) {
+            st = dbRecord.simpleText;
+          }
+          sDate = dbRecord.sourceDate || dbRecord.date || null;
+          const fDate = formatSourceDate(sDate);
+          if (fDate) {
+            itemUpdateTime = `数据截至 ${fDate}`;
+          }
+          if (Array.isArray(dbRecord.history) && dbRecord.history.length >= 2) {
+            hist = dbRecord.history;
+          }
+          if (Array.isArray(dbRecord.historyLabels)) {
+            histLabels = dbRecord.historyLabels;
+          }
+
+          if (hist && hist.length >= 2) {
+            const first = hist[0];
+            const last = hist[hist.length - 1];
+            if (first > 0) {
+              const annualChange = ((last - first) / first) * 100;
+              if (annualChange >= 5) {
+                detailExplain = "近一年整体上涨，中间也有过波动。";
+              } else if (annualChange <= -5) {
+                detailExplain = "近一年整体有所回落，中间也出现过反复。";
+              } else {
+                detailExplain = "近一年整体变化不大，期间有上涨也有回落。";
+              }
+            }
+          }
+        }
+
+        return Object.assign({}, item, {
+          value: val,
+          change: chg,
+          simpleText: st,
+          sourceDate: sDate,
+          displayValue: formatValue(val),
+          displayChange: formatChange(chg),
+          changeClass: getChangeClass(chg),
+          updateTime: itemUpdateTime,
+          history: hist,
+          historyLabels: histLabels,
+          detailExplain: detailExplain
+        });
+      });
+
+      this.setData({
+        updateTime: topUpdateTime,
+        marketList: newMarketList
+      });
+
+      if (this.data.showMarketDetail && this.data.selectedMarket) {
+        const updatedSelected = newMarketList.find(m => m.name === this.data.selectedMarket.name);
+        if (updatedSelected) {
+          this.setData({ selectedMarket: updatedSelected }, () => {
+            this.drawMarketChart(updatedSelected);
+          });
+        }
+      }
+    } catch (err) {
+      console.error("loadMarketData error:", err);
+      const fallbackMarketList = rawMarketList.map(item => {
+        return Object.assign({}, item, {
+          value: null,
+          change: null,
+          simpleText: "数据暂未更新",
+          displayValue: "--",
+          displayChange: "--",
+          changeClass: "flat",
+          updateTime: "数据暂未更新",
+          history: null,
+          historyLabels: null,
+          detailExplain: "最近一年整体经历过上涨和回落，中间波动很正常。"
+        });
+      });
+      this.setData({
+        updateTime: "数据暂未更新",
+        marketList: fallbackMarketList
+      });
+    }
+  },
+
   openMarketDetail(e) {
     const index = e.currentTarget.dataset.index;
     const market = this.data.marketList[index];
     this.setData({
       selectedMarket: market,
       showMarketDetail: true
+    }, () => {
+      this.drawMarketChart(market);
     });
-    this.drawMarketChart(market);
   },
 
   closeMarketDetail() {
@@ -116,7 +292,22 @@ Page({
         canvas.height = height * dpr;
         ctx.scale(dpr, dpr);
 
-        const values = market.history;
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, width, height);
+
+        const values = market && Array.isArray(market.history) ? market.history : null;
+        if (!values || values.length < 2) {
+          ctx.fillStyle = "#8494AD";
+          ctx.font = "12px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("暂无历史走势数据", width / 2, height / 2);
+          return;
+        }
+
+        const labels = market && Array.isArray(market.historyLabels) ? market.historyLabels : [];
+
         const minValue = Math.min.apply(null, values);
         const maxValue = Math.max.apply(null, values);
         const range = maxValue - minValue || 1;
@@ -127,9 +318,6 @@ Page({
         const plotHeight = bottom - top;
         const plotWidth = right - left;
 
-        ctx.clearRect(0, 0, width, height);
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(0, 0, width, height);
         ctx.font = "10px sans-serif";
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
@@ -148,13 +336,18 @@ Page({
           ctx.fillText(formatChartValue(gridValue), left - 8, y);
         }
 
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        historyLabels.forEach((label, labelIndex) => {
-          const x = left + plotWidth * historyLabelIndices[labelIndex] / (values.length - 1);
-          ctx.fillStyle = "#8494AD";
-          ctx.fillText(label, x, bottom + 9);
-        });
+        if (labels.length === values.length && labels.length > 0) {
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          const maxLabelCount = Math.min(5, labels.length);
+          for (let i = 0; i < maxLabelCount; i++) {
+            const labelIdx = maxLabelCount === 1 ? 0 : Math.round(i * (labels.length - 1) / (maxLabelCount - 1));
+            const labelText = labels[labelIdx];
+            const x = left + plotWidth * labelIdx / (values.length - 1);
+            ctx.fillStyle = "#8494AD";
+            ctx.fillText(labelText, x, bottom + 9);
+          }
+        }
 
         ctx.strokeStyle = "#1689F8";
         ctx.lineWidth = 2.5;

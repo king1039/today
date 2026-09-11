@@ -1,0 +1,12 @@
+{
+  "name": "updateMarketDaily",
+  "version": "1.0.0",
+  "description": "获取上一交易日市场数据并写入market_daily集合",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
