@@ -1,0 +1,42 @@
+page { background: #F5FAFF; }
+.settings-page { width: 100%; padding: 30rpx 28rpx 48rpx; overflow-x: hidden; }
+.settings-title-row { display: flex; align-items: center; margin-bottom: 28rpx; }
+.settings-icon { font-size: 44rpx; margin-right: 16rpx; }
+.settings-title { color: #102A56; font-size: 40rpx; font-weight: 700; }
+.brand-card, .settings-card { background: #FFFFFF; border-radius: 24rpx; margin-bottom: 24rpx; }
+.brand-card { display: flex; align-items: center; padding: 28rpx; }
+.brand-logo { width: 120rpx; height: 120rpx; border-radius: 26rpx; margin-right: 26rpx; }
+.brand-info { display: flex; flex-direction: column; }
+.brand-name { color: #102A56; font-size: 36rpx; font-weight: 700; }
+.brand-version { color: #8494AD; font-size: 25rpx; margin-top: 10rpx; }
+.brand-description { color: #8494AD; font-size: 22rpx; margin-top: 14rpx; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; min-height: 96rpx; padding: 0 24rpx; border-bottom: 1rpx solid #EDF3F9; color: #102A56; font-size: 29rpx; }
+.setting-row:last-child { border-bottom: 0; }
+.row-label { display: flex; align-items: center; }
+.row-label-column { display: flex; flex-direction: column; align-items: flex-start; }
+.row-icon { width: 46rpx; margin-right: 14rpx; font-size: 30rpx; text-align: center; }
+.row-help { color: #8494AD; font-size: 20rpx; margin-top: 4rpx; margin-left: 60rpx; }
+.row-value { display: flex; align-items: center; color: #526987; }
+.arrow { color: #8494AD; font-size: 42rpx; line-height: 1; margin-left: 14rpx; }
+.frequency-card { padding: 24rpx; }
+.card-title { display: block; color: #102A56; font-size: 30rpx; font-weight: 700; padding-bottom: 14rpx; }
+.frequency-row { display: flex; justify-content: space-between; padding: 13rpx 0; color: #526987; font-size: 24rpx; }
+.frequency-row text:last-child { color: #8494AD; }
+.frequency-tip { display: block; color: #8494AD; font-size: 20rpx; line-height: 1.5; margin-top: 12rpx; }
+.compact-card { overflow: hidden; }
+.sheet-layer { position: fixed; z-index: 20; left: 0; right: 0; top: 0; bottom: 0; }
+.mask { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: rgba(16, 42, 86, .32); }
+.bottom-sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 85vh; max-height: 85vh; border-radius: 30rpx 30rpx 0 0; background: #FFFFFF; }
+.sheet-content { padding: 30rpx 32rpx 44rpx; }
+.sheet-header { display: flex; align-items: center; justify-content: space-between; }
+.sheet-title { color: #102A56; font-size: 34rpx; font-weight: 700; }
+.close-button { color: #8494AD; font-size: 48rpx; line-height: 1; padding: 0 8rpx; }
+.choice-list { margin-top: 20rpx; }
+.choice-row { display: flex; align-items: center; justify-content: space-between; min-height: 82rpx; padding: 0 20rpx; border-bottom: 1rpx solid #EDF3F9; color: #102A56; font-size: 28rpx; }
+.choice-row.selected { color: #1689F8; background: #F0F8FF; }
+.check { color: #1689F8; font-size: 32rpx; font-weight: 700; }
+.primary-button { height: 78rpx; line-height: 78rpx; margin-top: 26rpx; border-radius: 39rpx; color: #FFFFFF; background: #1689F8; font-size: 28rpx; }
+.text-sheet { display: flex; flex-direction: column; color: #526987; font-size: 26rpx; line-height: 1.8; margin-top: 26rpx; }
+.text-sheet text { margin-bottom: 10rpx; }
+.about-name { color: #102A56; font-size: 32rpx; font-weight: 700; }
+.sheet-note { color: #8494AD; font-size: 22rpx; margin-top: 16rpx; }

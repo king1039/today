@@ -1,0 +1,88 @@
+<view class="life-page">
+  <view class="life-header">
+    <image class="brand-logo" src="/images/app-icon.png" mode="aspectFit"></image>
+    <view class="brand-copy">
+      <text class="brand-title">生活</text>
+      <text class="brand-slogan">身边的数据 · 关系你的一天</text>
+    </view>
+    <text class="update-time">{{updateTime}}</text>
+  </view>
+
+  <view class="life-tabs">
+    <view class="life-tab {{activeLifeType === 'recent' ? 'active' : ''}}" data-type="recent" bindtap="switchLifeType">
+      <text>近期变化</text><text class="tab-subtitle">（与时变化的明细）</text>
+    </view>
+    <view class="life-tab {{activeLifeType === 'longTerm' ? 'active' : ''}}" data-type="longTerm" bindtap="switchLifeType">
+      <text>长期变化</text><text class="tab-subtitle">（需要较长时间的趋势）</text>
+    </view>
+  </view>
+
+  <view wx:if="{{activeLifeType === 'longTerm'}}" class="long-tip">这些数据反映的是长期趋势，不代表每天的变化。</view>
+  <view wx:if="{{currentIndicators.length}}" class="{{activeLifeType === 'recent' ? 'recent-grid' : 'long-term-list'}}">
+    <view class="indicator-card" wx:for="{{currentIndicators}}" wx:key="id" data-index="{{index}}" bindtap="openIndicatorDetail">
+      <view class="indicator-heading">
+        <text class="indicator-icon">{{item.icon}}</text>
+        <view class="indicator-name-wrap">
+          <text class="indicator-name">{{item.name}}</text>
+          <text class="indicator-subtitle">{{item.subtitle}}（{{item.compareText}}）</text>
+        </view>
+      </view>
+      <view class="indicator-value-row">
+        <text class="indicator-value" wx:if="{{item.dataAvailable}}">{{item.value}}</text>
+        <view wx:else><text class="indicator-value unavailable">数据暂未更新</text><text class="last-known">{{item.lastKnownText}}</text></view>
+        <text class="indicator-change {{item.changeClass}}" wx:if="{{item.dataAvailable}}">{{item.changeText}}</text>
+      </view>
+      <text class="indicator-simple">{{item.simpleText}}</text>
+      <view class="indicator-footer">
+        <text>{{item.dataPeriod}}</text><text>· {{item.updateFrequency}}</text>
+      </view>
+    </view>
+  </view>
+  <view wx:else class="empty-life">数据暂未更新</view>
+
+  <view wx:if="{{showIndicatorDetail}}" class="detail-layer">
+    <view class="mask" catchtap="closeIndicatorDetail"></view>
+    <scroll-view class="detail-sheet" scroll-y="true" catchtap="stopPropagation">
+      <view class="detail-content">
+        <view class="detail-header">
+          <view class="detail-title-wrap">
+            <text class="detail-icon">{{selectedIndicator.icon}}</text>
+            <view>
+              <text class="detail-title">{{selectedIndicator.name}}</text>
+              <text class="detail-meta">最新数据：{{selectedIndicator.dataPeriod}}</text>
+            </view>
+          </view>
+          <text class="close-button" catchtap="closeIndicatorDetail">×</text>
+        </view>
+        <view class="detail-summary">
+          <text class="detail-value" wx:if="{{selectedIndicator.dataAvailable}}">{{selectedIndicator.value}}</text>
+          <text class="detail-value unavailable" wx:else>数据暂未更新</text>
+          <text class="detail-change {{selectedIndicator.changeClass}}" wx:if="{{selectedIndicator.dataAvailable}}">{{selectedIndicator.changeText}}</text>
+          <text class="detail-compare">{{selectedIndicator.compareText}}</text>
+        </view>
+        <text class="detail-source">数据来源：{{selectedIndicator.source}}</text>
+        <view class="range-tabs">
+          <view class="range-tab {{activeRange === 1 ? 'active' : ''}}" wx:if="{{selectedIndicator.history.oneYear}}" data-range="1" bindtap="switchChartRange">近1年</view>
+          <view class="range-tab {{activeRange === 3 ? 'active' : ''}}" wx:if="{{selectedIndicator.history.threeYears}}" data-range="3" bindtap="switchChartRange">近3年</view>
+          <view class="range-tab {{activeRange === 5 ? 'active' : ''}}" wx:if="{{selectedIndicator.history.fiveYears}}" data-range="5" bindtap="switchChartRange">近5年</view>
+        </view>
+        <canvas wx:if="{{selectedIndicator.dataAvailable}}" id="indicator-chart" type="2d" class="indicator-chart"></canvas>
+        <text wx:else class="chart-unavailable">{{selectedIndicator.lastKnownText}}</text>
+        <view class="explain-box">
+          <text class="explain-title">这几年整体发生了什么？</text>
+          <text class="explain-text">{{selectedIndicator.chartExplain}}</text>
+        </view>
+        <view wx:if="{{selectedIndicator.voteOptions}}" class="vote-section">
+          <text class="vote-question">{{selectedIndicator.voteQuestion}}</text>
+          <view class="vote-options">
+            <view class="vote-option {{item.key}}" wx:for="{{selectedIndicator.voteOptions}}" wx:key="key" data-key="{{item.key}}" bindtap="voteIndicator">
+              <text>{{item.label}}</text><text>{{item.percent}}%</text>
+            </view>
+          </view>
+        </view>
+        <text class="detail-footer">数据来源：{{selectedIndicator.source}}　|　更新时间：{{selectedIndicator.dataPeriod}}</text>
+        <text class="disclaimer">互动结果仅代表用户个人感受和观点，不构成任何投资、购房或其他决策建议。</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>

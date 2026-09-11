@@ -1,0 +1,102 @@
+<view class="settings-page">
+  <view class="settings-title-row">
+    <text class="settings-icon">⚙️</text>
+    <text class="settings-title">设置</text>
+  </view>
+
+  <view class="brand-card">
+    <image class="brand-logo" src="/images/app-icon.png" mode="aspectFit"></image>
+    <view class="brand-info">
+      <text class="brand-name">今天有变化</text>
+      <text class="brand-version">版本 {{version}}</text>
+      <text class="brand-description">每天一分钟，看懂重要变化</text>
+    </view>
+  </view>
+
+  <view class="settings-card">
+    <view class="setting-row" bindtap="openCitySelector">
+      <view class="row-label"><text class="row-icon">📍</text><text>我的关注城市</text></view>
+      <view class="row-value"><text>{{selectedCity}}</text><text class="arrow">›</text></view>
+    </view>
+    <view class="setting-row" bindtap="openFontSelector">
+      <view class="row-label"><text class="row-icon">🔤</text><text>字体大小</text></view>
+      <view class="row-value"><text>{{fontSizeText}}</text><text class="arrow">›</text></view>
+    </view>
+    <view class="setting-row">
+      <view class="row-label row-label-column"><text><text class="row-icon">🔔</text>消息提醒</text><text class="row-help">重要数据和事件提醒</text></view>
+      <switch color="#1689F8" checked="{{notificationEnabled}}" bindchange="onNotificationChange"></switch>
+    </view>
+  </view>
+
+  <view class="settings-card frequency-card">
+    <text class="card-title">数据更新频率</text>
+    <view class="frequency-row"><text>市场</text><text>每个交易日</text></view>
+    <view class="frequency-row"><text>新闻</text><text>重要消息及时更新</text></view>
+    <view class="frequency-row"><text>房价</text><text>每月更新</text></view>
+    <view class="frequency-row"><text>就业/物价</text><text>每月更新</text></view>
+    <view class="frequency-row"><text>居民收入</text><text>按季度更新</text></view>
+    <view class="frequency-row"><text>人口数据</text><text>每年更新</text></view>
+    <text class="frequency-tip">不同数据发布时间不同，以官方最新公开数据为准。</text>
+  </view>
+
+  <view class="settings-card compact-card">
+    <view class="setting-row" bindtap="openDataSources"><text class="row-label"><text class="row-icon">📚</text>数据来源</text><text class="arrow">›</text></view>
+  </view>
+
+  <view class="settings-card compact-card">
+    <view class="setting-row" bindtap="openAbout"><text class="row-label"><text class="row-icon">ℹ️</text>关于我们</text><text class="arrow">›</text></view>
+    <view class="setting-row" bindtap="openPrivacy"><text class="row-label"><text class="row-icon">🔒</text>隐私政策</text><text class="arrow">›</text></view>
+    <view class="setting-row" bindtap="openUsageGuide"><text class="row-label"><text class="row-icon">📖</text>使用说明</text><text class="arrow">›</text></view>
+  </view>
+
+  <view class="settings-card compact-card">
+    <view class="setting-row" bindtap="clearCache">
+      <text class="row-label"><text class="row-icon">🧹</text>清除缓存</text>
+      <view class="row-value"><text>{{cacheSize}}</text><text class="arrow">›</text></view>
+    </view>
+  </view>
+
+  <view wx:if="{{showSheet}}" class="sheet-layer">
+    <view class="mask" catchtap="closeSheet"></view>
+    <scroll-view class="bottom-sheet" scroll-y="true" catchtap="stopPropagation">
+      <view class="sheet-content">
+        <view class="sheet-header"><text class="sheet-title">{{sheetType === 'city' ? '选择关注城市' : sheetType === 'font' ? '字体大小' : sheetType === 'sources' ? '数据从哪里来？' : sheetType === 'about' ? '关于我们' : sheetType === 'privacy' ? '隐私说明' : '使用说明'}}</text><text class="close-button" catchtap="closeSheet">×</text></view>
+
+        <view wx:if="{{sheetType === 'city'}}">
+          <view class="choice-list">
+            <view class="choice-row {{selectedCityTemp === item ? 'selected' : ''}}" wx:for="{{cities}}" wx:key="*this" data-city="{{item}}" bindtap="selectCity"><text>{{item}}</text><text wx:if="{{selectedCityTemp === item}}" class="check">✓</text></view>
+          </view>
+          <button class="primary-button" bindtap="saveCity">保存</button>
+        </view>
+
+        <view wx:if="{{sheetType === 'font'}}">
+          <view class="choice-list">
+            <view class="choice-row {{selectedFontTemp === item.key ? 'selected' : ''}}" wx:for="{{fontOptions}}" wx:key="key" data-font="{{item.key}}" bindtap="selectFont"><text>{{item.label}}</text><text wx:if="{{selectedFontTemp === item.key}}" class="check">✓</text></view>
+          </view>
+          <button class="primary-button" bindtap="saveFontSize">保存</button>
+        </view>
+
+        <view wx:if="{{sheetType === 'sources'}}" class="text-sheet">
+          <text>「今天有变化」优先整理公开、可核实的数据和信息。</text>
+          <text>主要包括：</text>
+          <text>· 国家统计局等政府公开数据</text>
+          <text>· 国内外官方经济数据</text>
+          <text>· 公开市场指数数据</text>
+          <text>· 公开黄金、原油、汇率数据</text>
+          <text>· 国内外公开新闻和政策信息</text>
+          <text>每项数据尽量标明来源和更新时间。</text>
+          <text class="sheet-note">具体来源以各页面标注为准。</text>
+        </view>
+        <view wx:if="{{sheetType === 'about'}}" class="text-sheet">
+          <text class="about-name">今天有变化</text><text>我们希望用简单易懂的方式，</text><text>帮普通人快速了解市场、世界和生活中正在发生的变化。</text><text>不讲复杂术语，</text><text>不推荐个股，</text><text>不提供买卖建议。</text><text>每天花一分钟，</text><text>看懂世界变化，了解身边生活。</text><text class="sheet-note">版本 {{version}}</text>
+        </view>
+        <view wx:if="{{sheetType === 'privacy'}}" class="text-sheet">
+          <text class="about-name">隐私说明</text><text>「今天有变化」不会主动要求用户提供姓名、身份证、银行卡等敏感个人信息。</text><text>为了保存用户选择，我们可能在本地保存：</text><text>· 关注城市</text><text>· 字体大小</text><text>· 提醒开关</text><text>这些设置主要保存在微信小程序本地存储中。</text><text>如果未来功能涉及新的数据使用方式，我们会更新相关说明。</text>
+        </view>
+        <view wx:if="{{sheetType === 'usage'}}" class="text-sheet">
+          <text class="about-name">使用说明</text><text>本小程序主要用于公开信息整理、数据展示和通俗解释。</text><text>我们不会提供：</text><text>· 个股推荐</text><text>· 买卖建议</text><text>· 收益保证</text><text>· 房产买卖建议</text><text>市场、房价、黄金、油价等都会受到多种因素影响。</text><text>页面中的“可能影响”“大家怎么看”等内容，不代表未来一定会发生。</text><text>用户互动结果仅代表用户个人观点。</text><text>请根据自身情况独立判断。</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>

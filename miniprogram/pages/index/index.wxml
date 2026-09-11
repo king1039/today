@@ -1,0 +1,81 @@
+<view class="page">
+  <view class="header">
+    <view class="brand">
+      <image class="brand-logo" src="/images/app-icon.png" mode="aspectFit"></image>
+      <view class="brand-copy">
+        <text class="brand-title">今天有变化</text>
+        <text class="brand-slogan">看懂世界变化 · 连接身边生活</text>
+      </view>
+    </view>
+    <view class="header-meta">
+      <text>{{dateLabel}}</text>
+      <text>{{updateTime}}</text>
+    </view>
+  </view>
+
+  <view class="minute-tip">
+    <text class="tip-sun">☀️</text>
+    <text>一分钟，看完今天的重要变化</text>
+  </view>
+
+  <view class="market-card">
+    <view class="section-heading">
+      <view>
+        <text class="section-title">今日主要指数</text>
+        <text class="section-subtitle">比上一个交易日</text>
+      </view>
+    </view>
+    <view class="market-list">
+      <view class="market-row" wx:for="{{marketList}}" wx:key="name" data-index="{{index}}" bindtap="openMarketDetail">
+        <view class="market-info">
+          <text class="asset-icon">{{item.icon}}</text>
+          <view class="market-label">
+            <text class="market-name">{{item.name}}</text>
+            <text class="simple-text">{{item.simpleText}}</text>
+          </view>
+        </view>
+        <text class="market-value">{{item.displayValue}}</text>
+        <text class="market-change {{item.changeClass}}">{{item.displayChange}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="event-card">
+    <text class="event-title">今天要留意</text>
+    <text class="event-content">{{todayEvent.content}}</text>
+    <view class="event-meta">
+      <text class="event-time">{{todayEvent.time}}</text>
+      <text>{{todayEvent.title}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{showMarketDetail}}" class="detail-layer">
+    <view class="mask" catchtap="closeMarketDetail"></view>
+    <scroll-view class="detail-sheet" scroll-y="true" catchtap="noop">
+      <view class="detail-content">
+        <view class="detail-header">
+          <text class="detail-title">{{selectedMarket.name}}</text>
+          <text class="close-button" catchtap="closeMarketDetail">×</text>
+        </view>
+        <view class="detail-summary">
+          <text class="detail-value">{{selectedMarket.displayValue}}</text>
+          <text class="detail-change {{selectedMarket.changeClass}}">{{selectedMarket.displayChange}}</text>
+        </view>
+        <text class="detail-time">{{selectedMarket.updateTime}}</text>
+        <text class="trend-title">近1年走势</text>
+        <canvas id="market-chart" type="2d" class="market-chart"></canvas>
+        <text class="detail-explain">最近一年整体经历过上涨和回落，中间波动很正常。</text>
+        <view class="poll-section">
+          <text class="poll-question">你觉得接下来会涨还是会跌？</text>
+          <view class="poll-buttons">
+            <button class="poll-button poll-up" disabled="{{hasVoted}}" bindtap="voteUp">看涨</button>
+            <button class="poll-button poll-down" disabled="{{hasVoted}}" bindtap="voteDown">看跌</button>
+          </view>
+          <text class="poll-result">{{voteResult}}</text>
+          <text class="poll-participants">{{participantCount}}</text>
+        </view>
+        <text class="disclaimer">互动结果仅代表用户观点，不构成任何投资或交易建议。</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>

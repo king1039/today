@@ -1,0 +1,82 @@
+<view class="news-page">
+  <view class="news-header">
+    <image class="brand-logo" src="/images/app-icon.png" mode="aspectFit"></image>
+    <view class="brand-copy">
+      <text class="brand-title">今天有变化</text>
+      <text class="brand-slogan">看懂世界变化 · 连接身边生活</text>
+    </view>
+  </view>
+
+  <view class="news-tabs">
+    <view class="news-tab {{activeNewsType === 'international' ? 'active' : ''}}" data-type="international" bindtap="switchNewsType">国际新闻</view>
+    <view class="news-tab {{activeNewsType === 'domestic' ? 'active' : ''}}" data-type="domestic" bindtap="switchNewsType">国内新闻</view>
+  </view>
+
+  <view class="top-news">
+    <text class="top-news-title">今天先看这3件</text>
+    <view class="top-news-list">
+      <view class="top-news-item" wx:for="{{topNews}}" wx:key="label" data-index="{{item.index}}" bindtap="openTopNews">
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{currentNewsList.length}}" class="news-list">
+    <view class="news-card" wx:for="{{currentNewsList}}" wx:key="id" data-index="{{index}}" bindtap="openNewsDetail">
+      <view class="news-image-wrap">
+        <image wx:if="{{!item.imageFailed && item.image}}" class="news-image" src="{{item.image}}" mode="aspectFill" data-index="{{index}}" binderror="handleImageError"></image>
+        <view wx:else class="news-image-placeholder"><text>📰</text></view>
+      </view>
+      <view class="news-card-content">
+        <view class="news-card-heading">
+          <text class="news-title">{{item.title}}</text>
+          <text class="news-time">{{item.timeText}}</text>
+        </view>
+        <text class="news-summary">{{item.summary}}</text>
+        <view class="tag-list">
+          <text class="news-tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view wx:else class="empty-news">今天暂时没有需要特别留意的消息</view>
+
+  <view wx:if="{{showNewsDetail}}" class="detail-layer">
+    <view class="mask" catchtap="closeNewsDetail"></view>
+    <scroll-view class="detail-sheet" scroll-y="true" catchtap="noop">
+      <view class="detail-content">
+        <view class="detail-top">
+          <view class="detail-image-wrap">
+            <image wx:if="{{!selectedNews.imageFailed && selectedNews.image}}" class="detail-image" src="{{selectedNews.image}}" mode="aspectFill" binderror="handleDetailImageError"></image>
+            <view wx:else class="detail-image-placeholder"><text>📰</text></view>
+          </view>
+          <view class="detail-heading">
+            <text class="detail-title">{{selectedNews.title}}</text>
+            <text class="detail-meta">来源：{{selectedNews.source}}</text>
+            <text class="detail-meta">发布时间：{{selectedNews.publishTime}}</text>
+          </view>
+          <text class="close-button" catchtap="closeNewsDetail">×</text>
+        </view>
+        <view class="detail-section">
+          <text class="detail-section-title">发生了什么？</text>
+          <text class="detail-text">{{selectedNews.whatHappened}}</text>
+        </view>
+        <view class="plain-explain">
+          <text class="detail-section-title">大白话</text>
+          <text class="detail-text">{{selectedNews.plainExplain}}</text>
+        </view>
+        <view class="detail-section">
+          <text class="detail-section-title">可能影响</text>
+          <view class="impact-item" wx:for="{{selectedNews.impacts}}" wx:key="*this">
+            <text class="impact-dot">•</text><text class="detail-text">{{item}}</text>
+          </view>
+        </view>
+        <view class="relation-box">
+          <text class="detail-section-title">简单看关系</text>
+          <text class="relation-text">{{selectedNews.relationText}}</text>
+        </view>
+        <text class="disclaimer">以上内容仅为公开信息整理和通俗解释，不构成任何投资、购房或交易建议。</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>

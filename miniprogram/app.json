@@ -1,0 +1,30 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/news/index",
+    "pages/life/index",
+    "pages/settings/index"
+  ],
+  "window": {
+    "backgroundColor": "#F5FAFF",
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#F5FAFF",
+    "navigationBarTitleText": "",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#8494AD",
+    "selectedColor": "#1689F8",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "市场" },
+      { "pagePath": "pages/news/index", "text": "消息" },
+      { "pagePath": "pages/life/index", "text": "生活" },
+      { "pagePath": "pages/settings/index", "text": "设置" }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
+}
