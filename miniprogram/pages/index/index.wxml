@@ -40,11 +40,13 @@
         </view>
         <view class="detail-summary">
           <text class="detail-value">{{selectedMarket.displayValue}}</text>
-          <text class="detail-change {{selectedMarket.changeClass}}">{{selectedMarket.displayChange}}</text>
         </view>
         <text class="detail-time">{{selectedMarket.updateTime}}</text>
         <view class="trend-heading">
-          <text class="trend-title">近{{chartPeriod}}年走势</text>
+          <view class="trend-title-row">
+            <text class="trend-title">近{{chartPeriod}}年走势</text>
+            <text class="period-change {{periodChangeClass}}">{{periodChangeDisplay}}</text>
+          </view>
           <view class="chart-period-tabs">
             <text class="chart-period-tab {{chartPeriod === 1 ? 'active' : ''}}" data-period="1" catchtap="changeChartPeriod">1年</text>
             <text class="chart-period-tab {{chartPeriod === 3 ? 'active' : ''}}" data-period="3" catchtap="changeChartPeriod">3年</text>

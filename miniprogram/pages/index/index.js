@@ -80,6 +80,9 @@ Page({
     selectedMarket: null,
     showMarketDetail: false,
     chartPeriod: 1,
+    periodChangePercent: null,
+    periodChangeDisplay: "--",
+    periodChangeClass: "flat",
     chartTrend: "",
     chartHistoryNotice: "",
     hasVoted: false,
@@ -259,8 +262,16 @@ Page({
   updateChartState(market, period) {
     const chartData = this.getFilteredChartData(market, period);
     const requiredMonths = period * 12;
+    let periodChangePercent = null;
+    if (chartData.values.length >= 2 && chartData.values[0] > 0) {
+      periodChangePercent = (chartData.values[chartData.values.length - 1] - chartData.values[0])
+        / chartData.values[0] * 100;
+    }
     this.setData({
       chartPeriod: period,
+      periodChangePercent,
+      periodChangeDisplay: formatChange(periodChangePercent),
+      periodChangeClass: getChangeClass(periodChangePercent),
       chartTrend: this.getChartTrend(chartData.values, period),
       chartHistoryNotice: chartData.availableMonths < requiredMonths
         ? `目前可用历史数据不足${period}年`

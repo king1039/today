@@ -223,16 +223,26 @@ page {
 }
 
 .trend-heading {
+  margin-top: 24rpx;
+}
+
+.trend-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 24rpx;
+}
+
+.period-change {
+  font-size: 26rpx;
+  font-weight: 600;
 }
 
 .chart-period-tabs {
   display: flex;
   align-items: center;
   gap: 8rpx;
+  justify-content: flex-end;
+  margin-top: 6rpx;
 }
 
 .chart-period-tab {
