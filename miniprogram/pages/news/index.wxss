@@ -8,36 +8,6 @@ page {
   overflow-x: hidden;
 }
 
-.news-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 28rpx;
-}
-
-.brand-logo {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 18rpx;
-  margin-right: 18rpx;
-}
-
-.brand-copy {
-  display: flex;
-  flex-direction: column;
-}
-
-.brand-title {
-  color: #102A56;
-  font-size: 40rpx;
-  font-weight: 700;
-}
-
-.brand-slogan {
-  color: #8494AD;
-  font-size: 22rpx;
-  margin-top: 6rpx;
-}
-
 .news-tabs {
   display: flex;
   padding: 6rpx;
@@ -113,23 +83,20 @@ page {
 }
 
 .news-card-content {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   flex: 1;
   padding-left: 20rpx;
 }
 
-.news-card-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
 .news-title {
   display: -webkit-box;
   overflow: hidden;
+  width: 100%;
   color: #102A56;
   font-size: 28rpx;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -139,7 +106,6 @@ page {
   flex-shrink: 0;
   color: #8494AD;
   font-size: 21rpx;
-  margin-left: 10rpx;
 }
 
 .news-summary {
@@ -153,9 +119,17 @@ page {
   -webkit-line-clamp: 2;
 }
 
+.news-card-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 10rpx;
+}
+
 .tag-list {
   display: flex;
-  margin-top: 10rpx;
+  min-width: 0;
 }
 
 .news-tag {
@@ -216,8 +190,8 @@ page {
 .detail-image-wrap,
 .detail-image,
 .detail-image-placeholder {
-  width: 190rpx;
-  height: 150rpx;
+  width: 170rpx;
+  height: 170rpx;
   flex-shrink: 0;
   border-radius: 16rpx;
 }
@@ -229,10 +203,14 @@ page {
 }
 
 .detail-title {
+  display: -webkit-box;
+  overflow: hidden;
   color: #102A56;
   font-size: 31rpx;
   font-weight: 700;
   line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .detail-meta {
@@ -291,11 +269,19 @@ page {
   margin-right: 10rpx;
 }
 
-.relation-text {
+.relation-text,
+.relation-arrow {
   display: block;
   color: #526987;
   font-size: 25rpx;
-  line-height: 1.8;
+  line-height: 1.6;
+}
+
+.relation-arrow {
+  color: #1689F8;
+  font-size: 28rpx;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .disclaimer {

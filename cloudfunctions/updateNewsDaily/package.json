@@ -1,0 +1,10 @@
+{
+  "name": "updateNewsDaily",
+  "version": "1.0.0",
+  "description": "生成每日精选新闻并写入news_daily集合",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3",
+    "fast-xml-parser": "^5.11.1"
+  }
+}
