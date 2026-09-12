@@ -3,57 +3,10 @@ page {
 }
 
 .page {
-  padding: 32rpx 28rpx 48rpx;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 28rpx;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-}
-
-.brand-logo {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 18rpx;
-  margin-right: 18rpx;
-}
-
-.brand-copy {
-  display: flex;
-  flex-direction: column;
-}
-
-.brand-title {
-  color: #102A56;
-  font-size: 40rpx;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.brand-slogan {
-  color: #8494AD;
-  font-size: 22rpx;
-  margin-top: 6rpx;
-}
-
-.header-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  color: #8494AD;
-  font-size: 22rpx;
-  line-height: 1.8;
+  padding: 16rpx 28rpx 48rpx;
 }
 
 .minute-tip,
-.event-card,
 .market-card {
   background: #FFFFFF;
   border-radius: 24rpx;
@@ -89,6 +42,27 @@ page {
 .section-title,
 .section-subtitle {
   display: block;
+}
+
+.section-meta {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.section-date,
+.section-update {
+  display: block;
+}
+
+.section-date {
+  color: #102A56;
+  font-size: 23rpx;
+}
+
+.section-update {
+  color: #8494AD;
+  font-size: 20rpx;
+  margin-top: 4rpx;
 }
 
 .section-title {
@@ -160,39 +134,6 @@ page {
 .rise { color: #F04444; }
 .fall { color: #16A36A; }
 .flat { color: #8494AD; }
-
-.event-card {
-  padding: 28rpx;
-  margin-top: 28rpx;
-}
-
-.event-title {
-  display: block;
-  color: #102A56;
-  font-size: 30rpx;
-  font-weight: 700;
-  margin-bottom: 16rpx;
-}
-
-.event-content {
-  color: #526987;
-  font-size: 25rpx;
-  line-height: 1.7;
-}
-
-.event-meta {
-  display: flex;
-  align-items: center;
-  color: #8494AD;
-  font-size: 23rpx;
-  margin-top: 20rpx;
-}
-
-.event-time {
-  color: #1689F8;
-  font-weight: 700;
-  margin-right: 18rpx;
-}
 
 .detail-layer {
   position: fixed;
@@ -276,11 +217,41 @@ page {
 }
 
 .trend-title {
-  display: block;
   color: #102A56;
   font-size: 26rpx;
   font-weight: 600;
+}
+
+.trend-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-top: 24rpx;
+}
+
+.chart-period-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.chart-period-tab {
+  color: #8494AD;
+  font-size: 21rpx;
+  padding: 6rpx 10rpx;
+  border-radius: 8rpx;
+}
+
+.chart-period-tab.active {
+  color: #1689F8;
+  background: #EAF6FF;
+}
+
+.chart-history-notice {
+  display: block;
+  color: #A0ADBD;
+  font-size: 20rpx;
+  margin-top: 6rpx;
 }
 
 .market-chart {

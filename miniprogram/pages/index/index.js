@@ -6,6 +6,7 @@ const rawMarketList = [
   { icon: "🇺🇸", name: "道琼斯" },
   { icon: "🇨🇳", name: "上证指数" },
   { icon: "🇨🇳", name: "沪深300" },
+  { icon: "🇨🇳", name: "科创50" },
   { icon: "🟡", name: "黄金" },
   { icon: "🛢️", name: "原油" },
   { icon: "💵", name: "美元/人民币" }
@@ -36,7 +37,7 @@ function getChangeClass(change) {
 
 function getTodayLabel() {
   const now = new Date();
-  return (now.getMonth() + 1) + "月" + now.getDate() + "日  " + weekdayNames[now.getDay()];
+  return (now.getMonth() + 1) + "月" + now.getDate() + "日 " + weekdayNames[now.getDay()];
 }
 
 function formatSourceDate(sourceDate) {
@@ -76,13 +77,11 @@ Page({
         updateTime: "数据暂未更新"
       });
     }),
-    todayEvent: {
-      time: "20:30",
-      title: "美国通胀数据",
-      content: "今晚美国将公布重要通胀数据，可能影响美股、美元和黄金的市场情绪。"
-    },
     selectedMarket: null,
     showMarketDetail: false,
+    chartPeriod: 1,
+    chartTrend: "",
+    chartHistoryNotice: "",
     hasVoted: false,
     voteResult: "看涨 58%    看跌 42%",
     participantCount: "12,345 人参与"
@@ -146,7 +145,6 @@ Page({
         let itemUpdateTime = "数据暂未更新";
         let hist = null;
         let histLabels = null;
-        let detailExplain = "最近一年整体经历过上涨和回落，中间波动很正常。";
 
         if (dbRecord && typeof dbRecord.value === "number" && !isNaN(dbRecord.value) && dbRecord.value > 0) {
           val = dbRecord.value;
@@ -168,20 +166,6 @@ Page({
             histLabels = dbRecord.historyLabels;
           }
 
-          if (hist && hist.length >= 2) {
-            const first = hist[0];
-            const last = hist[hist.length - 1];
-            if (first > 0) {
-              const annualChange = ((last - first) / first) * 100;
-              if (annualChange >= 5) {
-                detailExplain = "近一年整体上涨，中间也有过波动。";
-              } else if (annualChange <= -5) {
-                detailExplain = "近一年整体有所回落，中间也出现过反复。";
-              } else {
-                detailExplain = "近一年整体变化不大，期间有上涨也有回落。";
-              }
-            }
-          }
         }
 
         return Object.assign({}, item, {
@@ -195,7 +179,6 @@ Page({
           updateTime: itemUpdateTime,
           history: hist,
           historyLabels: histLabels,
-          detailExplain: detailExplain
         });
       });
 
@@ -208,7 +191,7 @@ Page({
         const updatedSelected = newMarketList.find(m => m.name === this.data.selectedMarket.name);
         if (updatedSelected) {
           this.setData({ selectedMarket: updatedSelected }, () => {
-            this.drawMarketChart(updatedSelected);
+            this.updateChartState(updatedSelected, this.data.chartPeriod);
           });
         }
       }
@@ -225,7 +208,6 @@ Page({
           updateTime: "数据暂未更新",
           history: null,
           historyLabels: null,
-          detailExplain: "最近一年整体经历过上涨和回落，中间波动很正常。"
         });
       });
       this.setData({
@@ -240,10 +222,58 @@ Page({
     const market = this.data.marketList[index];
     this.setData({
       selectedMarket: market,
-      showMarketDetail: true
+      showMarketDetail: true,
+      chartPeriod: 1
     }, () => {
-      this.drawMarketChart(market);
+      this.updateChartState(market, 1);
     });
+  },
+
+  getFilteredChartData(market, period) {
+    const values = market && Array.isArray(market.history) ? market.history : [];
+    const labels = market && Array.isArray(market.historyLabels) ? market.historyLabels : [];
+    if (values.length !== labels.length || !labels.length) {
+      return { values: [], labels: [], availableMonths: 0 };
+    }
+    const lastLabel = labels[labels.length - 1];
+    const lastDate = new Date(`${lastLabel}-01T00:00:00`);
+    const cutoff = new Date(lastDate.getFullYear(), lastDate.getMonth() - period * 12 + 1, 1);
+    const startIndex = labels.findIndex(label => new Date(`${label}-01T00:00:00`) >= cutoff);
+    const index = startIndex < 0 ? 0 : startIndex;
+    return {
+      values: values.slice(index),
+      labels: labels.slice(index),
+      availableMonths: labels.length
+    };
+  },
+
+  getChartTrend(values, period) {
+    if (values.length < 2 || values[0] <= 0) return "";
+    const change = (values[values.length - 1] - values[0]) / values[0] * 100;
+    const periodText = `近${period}年`;
+    if (change >= 5) return `${periodText}整体上涨，中间也有过波动。`;
+    if (change <= -5) return `${periodText}整体有所回落，中间也出现过反复。`;
+    return `${periodText}整体变化不大，期间有上涨也有回落。`;
+  },
+
+  updateChartState(market, period) {
+    const chartData = this.getFilteredChartData(market, period);
+    const requiredMonths = period * 12;
+    this.setData({
+      chartPeriod: period,
+      chartTrend: this.getChartTrend(chartData.values, period),
+      chartHistoryNotice: chartData.availableMonths < requiredMonths
+        ? `目前可用历史数据不足${period}年`
+        : ""
+    }, () => {
+      this.drawMarketChart(chartData.values, chartData.labels);
+    });
+  },
+
+  changeChartPeriod(e) {
+    const period = Number(e.currentTarget.dataset.period);
+    if ([1, 3, 5].indexOf(period) < 0 || !this.data.selectedMarket) return;
+    this.updateChartState(this.data.selectedMarket, period);
   },
 
   closeMarketDetail() {
@@ -274,7 +304,7 @@ Page({
     });
   },
 
-  drawMarketChart(market) {
+  drawMarketChart(values, labels) {
     if (this.chartTimer) clearTimeout(this.chartTimer);
     this.chartTimer = setTimeout(() => {
       const query = this.createSelectorQuery();
@@ -296,7 +326,6 @@ Page({
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(0, 0, width, height);
 
-        const values = market && Array.isArray(market.history) ? market.history : null;
         if (!values || values.length < 2) {
           ctx.fillStyle = "#8494AD";
           ctx.font = "12px sans-serif";
@@ -305,8 +334,6 @@ Page({
           ctx.fillText("暂无历史走势数据", width / 2, height / 2);
           return;
         }
-
-        const labels = market && Array.isArray(market.historyLabels) ? market.historyLabels : [];
 
         const minValue = Math.min.apply(null, values);
         const maxValue = Math.max.apply(null, values);

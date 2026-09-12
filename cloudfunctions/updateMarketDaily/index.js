@@ -6,23 +6,23 @@ cloud.init({
 
 const db = cloud.database();
 
-/**
- * 集中定义市场代码 map (EODHD ticker)
- */
 const SYMBOL_MAP = [
-  { code: 'SPX', name: '标普500', symbol: 'GSPC.INDX' },
-  { code: 'NDX', name: '纳斯达克100', symbol: 'NDX.INDX' },
-  { code: 'DJI', name: '道琼斯', symbol: 'DJI.INDX' },
-  { code: '000001.SS', name: '上证指数', symbol: '000001.SHG' },
-  { code: '000300.SS', name: '沪深300', symbol: '000300.SHG' },
-  { code: 'XAUUSD', name: '黄金', symbol: 'XAUUSD.FOREX' },
-  { code: 'WTI', name: '原油', symbol: 'WTI' },
-  { code: 'USDCNY', name: '美元/人民币', symbol: 'USDCNY.FOREX' }
+  { code: 'SPX', name: '标普500', type: 'us', symbol: '.INX' },
+  { code: 'NDX', name: '纳斯达克100', type: 'us', symbol: '.NDX' },
+  { code: 'DJI', name: '道琼斯', type: 'us', symbol: '.DJI' },
+  { code: '000001.SS', name: '上证指数', type: 'cn', symbol: 'sh000001' },
+  { code: '000300.SS', name: '沪深300', type: 'cn', symbol: 'sh000300' },
+  { code: '000688.SS', name: '科创50', type: 'cn', symbol: 'sh000688' },
+  { code: 'XAUUSD', name: '黄金', type: 'future', symbol: 'XAU' },
+  { code: 'WTI', name: '原油', type: 'future', symbol: 'CL' },
+  { code: 'USDCNY', name: '美元/人民币', type: 'forex', symbol: 'fx_susdcny' }
 ];
 
-/**
- * 根据涨跌幅计算 simpleText
- */
+const SINA_HEADERS = {
+  'User-Agent': 'Mozilla/5.0',
+  'Referer': 'https://finance.sina.com.cn/'
+};
+
 function calculateSimpleText(changePercent) {
   if (changePercent >= 1) {
     return '涨得比较多';
@@ -37,21 +37,6 @@ function calculateSimpleText(changePercent) {
   }
 }
 
-/**
- * 计算 370 天前日期 (YYYY-MM-DD)
- */
-function getFromDate() {
-  const d = new Date();
-  d.setDate(d.getDate() - 370);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/**
- * 从近一年交易日数据中按月份抽取每个月最后一个有效交易日
- */
 function extractMonthlyHistory(sortedData) {
   const monthMap = {};
   for (const item of sortedData) {
@@ -76,117 +61,137 @@ function extractMonthlyHistory(sortedData) {
   return { history, historyLabels };
 }
 
-/**
- * 数据源请求逻辑集中到该函数 (EODHD)
- */
-async function fetchMarketData(symbolConfig) {
-  const apiKey = process.env.MARKET_API_KEY || process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error('API Key 未在 process.env 中配置 (MARKET_API_KEY 或 API_KEY)');
+function parseJsonpArray(text) {
+  const start = text.indexOf('[');
+  const end = text.lastIndexOf(']');
+  if (start < 0 || end < start) {
+    throw new Error('新浪返回数据不是有效 JSONP 数组');
   }
-
-  if (symbolConfig.code === 'WTI') {
-    const url = `https://eodhd.com/api/commodities/historical/WTI?api_token=${encodeURIComponent(apiKey)}&interval=daily&fmt=json`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP 请求失败，状态码: ${response.status}`);
-    }
-    const data = await response.json();
-    const list = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : null);
-    if (!list) {
-      throw new Error('返回数据格式错误');
-    }
-    const fromDate = getFromDate();
-    const sortedData = [...list]
-      .filter(item => item && item.date && item.date >= fromDate)
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-    if (sortedData.length < 2) {
-      throw new Error('有效交易日数据少于 2 条');
-    }
-    const latest = sortedData[0];
-    const previous = sortedData[1];
-    const date = latest.date;
-    const value = parseFloat(latest.value || latest.close);
-    const previousValue = parseFloat(previous.value || previous.close);
-
-    if (!date || isNaN(value) || isNaN(previousValue) || value <= 0 || previousValue <= 0) {
-      throw new Error(`无法解析 ${symbolConfig.name}(${symbolConfig.code}) 的有效交易日收盘价`);
-    }
-
-    const changePercent = Number((((value - previousValue) / previousValue) * 100).toFixed(2));
-    const simpleText = calculateSimpleText(changePercent);
-    const { history, historyLabels } = extractMonthlyHistory(sortedData);
-
-    return {
-      code: symbolConfig.code,
-      name: symbolConfig.name,
-      date,
-      value,
-      previousValue,
-      changePercent,
-      simpleText,
-      source: 'EODHD',
-      sourceDate: date,
-      history,
-      historyLabels,
-      updatedAt: new Date()
-    };
+  let data;
+  try {
+    data = JSON.parse(text.slice(start, end + 1));
+  } catch (err) {
+    throw new Error(`新浪 JSONP 解析失败: ${err.message}`);
   }
-
-  const fromDate = getFromDate();
-  const url = `https://eodhd.com/api/eod/${encodeURIComponent(symbolConfig.symbol)}?api_token=${encodeURIComponent(apiKey)}&fmt=json&period=d&order=d&from=${fromDate}`;
-
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`HTTP 请求失败，状态码: ${response.status}`);
-  }
-
-  const data = await response.json();
-
   if (!Array.isArray(data)) {
-    throw new Error('返回数据不是数组');
+    throw new Error('新浪返回数据不是数组');
+  }
+  return data;
+}
+
+function normalizeRows(rows, dateKeys) {
+  return rows
+    .map(item => {
+      const rawDate = dateKeys.map(key => item && item[key]).find(Boolean);
+      const date = rawDate ? String(rawDate).slice(0, 10) : '';
+      const close = Number(item && (item.c !== undefined ? item.c : item.close));
+      return { date, close };
+    })
+    .filter(item => item.date && Number.isFinite(item.close) && item.close > 0)
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+async function fetchSinaUsIndex(config) {
+  const url = `https://stock.finance.sina.com.cn/usstock/api/jsonp.php/IO.XSRV2.CallbackList/US_MinKService.getDailyK?symbol=${encodeURIComponent(config.symbol)}&_var=kline_dayqfq&range=400d`;
+  const response = await fetch(url, { headers: SINA_HEADERS });
+  if (!response.ok) throw new Error(`HTTP 请求失败，状态码: ${response.status}`);
+  const rows = normalizeRows(parseJsonpArray(await response.text()), ['d', 'date']);
+  if (rows.length < 2) throw new Error('有效交易日数据少于 2 条');
+  return rows;
+}
+
+async function fetchSinaCnIndex(config) {
+  const url = `https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData?symbol=${encodeURIComponent(config.symbol)}&scale=240&datalen=1500`;
+  const response = await fetch(url, { headers: SINA_HEADERS });
+  if (!response.ok) throw new Error(`HTTP 请求失败，状态码: ${response.status}`);
+  const rows = parseJsonpArray(await response.text())
+    .map(item => ({
+      date: item && item.day ? String(item.day).slice(0, 10) : '',
+      close: Number(item && item.close)
+    }))
+    .filter(item => item.date && Number.isFinite(item.close) && item.close > 0)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (rows.length < 2) throw new Error('有效交易日数据少于 2 条');
+  return rows;
+}
+
+async function fetchSinaFuture(config) {
+  const url = `https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_data=/GlobalFuturesService.getGlobalFuturesDailyKLine?symbol=${encodeURIComponent(config.symbol)}`;
+  const response = await fetch(url, { headers: SINA_HEADERS });
+  if (!response.ok) throw new Error(`HTTP 请求失败，状态码: ${response.status}`);
+  const rows = normalizeRows(parseJsonpArray(await response.text()), ['d', 'date', 'day']);
+  if (rows.length < 2) throw new Error('有效交易日数据少于 2 条');
+  return rows;
+}
+
+async function fetchSinaForex(config) {
+  const url = `https://vip.stock.finance.sina.com.cn/forex/api/jsonp.php/var%20_data=/NewForexService.getDayKLine?symbol=${encodeURIComponent(config.symbol)}`;
+  const response = await fetch(url, { headers: SINA_HEADERS });
+  if (!response.ok) throw new Error(`HTTP 请求失败，状态码: ${response.status}`);
+  const text = await response.text();
+  const match = text.match(/\("((?:\\.|[^"\\])*)"\)/);
+  if (!match) throw new Error('新浪返回数据不是有效 JSONP 字符串');
+  let content;
+  try {
+    content = JSON.parse(`"${match[1]}"`);
+  } catch (err) {
+    throw new Error(`新浪 JSONP 字符串解析失败: ${err.message}`);
+  }
+  const rows = content
+    .split(',|')
+    .map(record => {
+      const fields = record.split(',');
+      return {
+        date: fields[0] ? fields[0].trim().slice(0, 10) : '',
+        close: Number(fields[2])
+      };
+    })
+    .filter(item => /^\d{4}-\d{2}-\d{2}$/.test(item.date)
+      && Number.isFinite(item.close)
+      && item.close > 0)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (rows.length < 2) throw new Error('有效交易日数据少于 2 条');
+  return rows;
+}
+
+async function fetchMarketData(symbolConfig) {
+  let rows;
+  if (symbolConfig.type === 'us') {
+    rows = await fetchSinaUsIndex(symbolConfig);
+  } else if (symbolConfig.type === 'cn') {
+    rows = await fetchSinaCnIndex(symbolConfig);
+  } else if (symbolConfig.type === 'future') {
+    rows = await fetchSinaFuture(symbolConfig);
+  } else if (symbolConfig.type === 'forex') {
+    rows = await fetchSinaForex(symbolConfig);
+  } else {
+    throw new Error(`不支持的数据类型: ${symbolConfig.type}`);
   }
 
-  const sortedData = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  if (sortedData.length < 2) {
-    throw new Error('有效交易日数据少于 2 条');
-  }
-
-  const latest = sortedData[0];
-  const previous = sortedData[1];
-
-  const date = latest.date;
-  const value = parseFloat(latest.close);
-  const previousValue = parseFloat(previous.close);
-
-  if (!date || isNaN(value) || isNaN(previousValue) || value <= 0 || previousValue <= 0) {
-    throw new Error(`无法解析 ${symbolConfig.name}(${symbolConfig.code}) 的有效交易日收盘价`);
-  }
-
-  const changePercent = Number((((value - previousValue) / previousValue) * 100).toFixed(2));
+  const latest = rows[0];
+  const previous = rows[1];
+  const value = latest.close;
+  const previousValue = previous.close;
+  const changePercent = ((value - previousValue) / previousValue) * 100;
   const simpleText = calculateSimpleText(changePercent);
-  const { history, historyLabels } = extractMonthlyHistory(sortedData);
+  const { history, historyLabels } = extractMonthlyHistory(rows);
 
   return {
     code: symbolConfig.code,
     name: symbolConfig.name,
-    date,
+    date: latest.date,
     value,
     previousValue,
     changePercent,
     simpleText,
-    source: 'EODHD',
-    sourceDate: date,
+    source: '新浪财经',
+    sourceDate: latest.date,
     history,
     historyLabels,
-    updatedAt: new Date()
+    updatedAt: db.serverDate()
   };
 }
 
-/**
- * 云函数入口函数
- */
 exports.main = async (event, context) => {
   let updated = 0;
   let failed = 0;
@@ -195,7 +200,6 @@ exports.main = async (event, context) => {
   for (const symbolConfig of SYMBOL_MAP) {
     try {
       const record = await fetchMarketData(symbolConfig);
-
       const collection = db.collection('market_daily');
       const existRes = await collection.where({
         code: record.code,
@@ -211,7 +215,6 @@ exports.main = async (event, context) => {
           data: record
         });
       }
-
       updated++;
     } catch (err) {
       failed++;

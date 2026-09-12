@@ -1,18 +1,4 @@
 <view class="page">
-  <view class="header">
-    <view class="brand">
-      <image class="brand-logo" src="/images/app-icon.png" mode="aspectFit"></image>
-      <view class="brand-copy">
-        <text class="brand-title">今天有变化</text>
-        <text class="brand-slogan">看懂世界变化 · 连接身边生活</text>
-      </view>
-    </view>
-    <view class="header-meta">
-      <text>{{dateLabel}}</text>
-      <text>{{updateTime}}</text>
-    </view>
-  </view>
-
   <view class="minute-tip">
     <text class="tip-sun">☀️</text>
     <text>一分钟，看完今天的重要变化</text>
@@ -23,6 +9,10 @@
       <view>
         <text class="section-title">今日主要指数</text>
         <text class="section-subtitle">比上一个交易日</text>
+      </view>
+      <view class="section-meta">
+        <text class="section-date">{{dateLabel}}</text>
+        <text class="section-update">{{updateTime}}</text>
       </view>
     </view>
     <view class="market-list">
@@ -40,15 +30,6 @@
     </view>
   </view>
 
-  <view class="event-card">
-    <text class="event-title">今天要留意</text>
-    <text class="event-content">{{todayEvent.content}}</text>
-    <view class="event-meta">
-      <text class="event-time">{{todayEvent.time}}</text>
-      <text>{{todayEvent.title}}</text>
-    </view>
-  </view>
-
   <view wx:if="{{showMarketDetail}}" class="detail-layer">
     <view class="mask" catchtap="closeMarketDetail"></view>
     <scroll-view class="detail-sheet" scroll-y="true" catchtap="noop">
@@ -62,9 +43,17 @@
           <text class="detail-change {{selectedMarket.changeClass}}">{{selectedMarket.displayChange}}</text>
         </view>
         <text class="detail-time">{{selectedMarket.updateTime}}</text>
-        <text class="trend-title">近1年走势</text>
+        <view class="trend-heading">
+          <text class="trend-title">近{{chartPeriod}}年走势</text>
+          <view class="chart-period-tabs">
+            <text class="chart-period-tab {{chartPeriod === 1 ? 'active' : ''}}" data-period="1" catchtap="changeChartPeriod">1年</text>
+            <text class="chart-period-tab {{chartPeriod === 3 ? 'active' : ''}}" data-period="3" catchtap="changeChartPeriod">3年</text>
+            <text class="chart-period-tab {{chartPeriod === 5 ? 'active' : ''}}" data-period="5" catchtap="changeChartPeriod">5年</text>
+          </view>
+        </view>
+        <text wx:if="{{chartHistoryNotice}}" class="chart-history-notice">{{chartHistoryNotice}}</text>
         <canvas id="market-chart" type="2d" class="market-chart"></canvas>
-        <text class="detail-explain">{{selectedMarket.detailExplain || "最近一年整体经历过上涨和回落，中间波动很正常。"}}</text>
+        <text wx:if="{{chartTrend}}" class="detail-explain">{{chartTrend}}</text>
         <view class="poll-section">
           <text class="poll-question">你觉得接下来会涨还是会跌？</text>
           <view class="poll-buttons">
