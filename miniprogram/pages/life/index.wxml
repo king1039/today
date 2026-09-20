@@ -1,13 +1,4 @@
 <view class="life-page">
-  <view class="life-header">
-    <image class="brand-logo" src="/images/app-icon.png" mode="aspectFit"></image>
-    <view class="brand-copy">
-      <text class="brand-title">生活</text>
-      <text class="brand-slogan">身边的数据 · 关系你的一天</text>
-    </view>
-    <text class="update-time">{{updateTime}}</text>
-  </view>
-
   <view class="life-tabs">
     <view class="life-tab {{activeLifeType === 'recent' ? 'active' : ''}}" data-type="recent" bindtap="switchLifeType">
       <text>近期变化</text><text class="tab-subtitle">（与时变化的明细）</text>
@@ -18,7 +9,7 @@
   </view>
 
   <view wx:if="{{activeLifeType === 'longTerm'}}" class="long-tip">这些数据反映的是长期趋势，不代表每天的变化。</view>
-  <view wx:if="{{currentIndicators.length}}" class="{{activeLifeType === 'recent' ? 'recent-grid' : 'long-term-list'}}">
+  <view wx:if="{{currentIndicators.length}}" class="recent-grid">
     <view class="indicator-card" wx:for="{{currentIndicators}}" wx:key="id" data-index="{{index}}" bindtap="openIndicatorDetail">
       <view class="indicator-heading">
         <text class="indicator-icon">{{item.icon}}</text>
@@ -57,20 +48,22 @@
         <view class="detail-summary">
           <text class="detail-value" wx:if="{{selectedIndicator.dataAvailable}}">{{selectedIndicator.value}}</text>
           <text class="detail-value unavailable" wx:else>数据暂未更新</text>
-          <text class="detail-change {{selectedIndicator.changeClass}}" wx:if="{{selectedIndicator.dataAvailable}}">{{selectedIndicator.changeText}}</text>
-          <text class="detail-compare">{{selectedIndicator.compareText}}</text>
         </view>
-        <text class="detail-source">数据来源：{{selectedIndicator.source}}</text>
-        <view class="range-tabs">
-          <view class="range-tab {{activeRange === 1 ? 'active' : ''}}" wx:if="{{selectedIndicator.history.oneYear}}" data-range="1" bindtap="switchChartRange">近1年</view>
-          <view class="range-tab {{activeRange === 3 ? 'active' : ''}}" wx:if="{{selectedIndicator.history.threeYears}}" data-range="3" bindtap="switchChartRange">近3年</view>
-          <view class="range-tab {{activeRange === 5 ? 'active' : ''}}" wx:if="{{selectedIndicator.history.fiveYears}}" data-range="5" bindtap="switchChartRange">近5年</view>
+        <view class="life-trend-heading">
+          <view class="life-trend-title-row">
+            <text class="life-trend-title">近{{lifeChartPeriod}}年走势</text>
+            <text class="life-period-change {{lifePeriodChangeClass}}">{{lifePeriodChangeDisplay}}</text>
+          </view>
+          <view class="life-period-tabs">
+            <text class="life-period-tab {{lifeChartPeriod === 1 ? 'active' : ''}}" data-period="1" catchtap="changeLifeChartPeriod">1年</text>
+            <text class="life-period-tab {{lifeChartPeriod === 3 ? 'active' : ''}}" data-period="3" catchtap="changeLifeChartPeriod">3年</text>
+            <text class="life-period-tab {{lifeChartPeriod === 5 ? 'active' : ''}}" data-period="5" catchtap="changeLifeChartPeriod">5年</text>
+          </view>
         </view>
+        <text wx:if="{{lifeHistoryNotice}}" class="life-history-notice">{{lifeHistoryNotice}}</text>
         <canvas wx:if="{{selectedIndicator.dataAvailable}}" id="indicator-chart" type="2d" class="indicator-chart"></canvas>
-        <text wx:else class="chart-unavailable">{{selectedIndicator.lastKnownText}}</text>
         <view class="explain-box">
-          <text class="explain-title">这几年整体发生了什么？</text>
-          <text class="explain-text">{{selectedIndicator.chartExplain}}</text>
+          <text class="explain-text">{{lifeChartTrend}}</text>
         </view>
         <view wx:if="{{selectedIndicator.voteOptions}}" class="vote-section">
           <text class="vote-question">{{selectedIndicator.voteQuestion}}</text>

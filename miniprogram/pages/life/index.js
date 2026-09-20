@@ -108,13 +108,17 @@ const longTermIndicators = prepareIndicators([
 Page({
   data: {
     activeLifeType: "recent",
-    updateTime: "9月9日 08:30 更新",
     recentIndicators: recentIndicators,
     longTermIndicators: longTermIndicators,
     currentIndicators: recentIndicators,
     selectedIndicator: null,
     showIndicatorDetail: false,
-    activeRange: 3,
+    lifeChartPeriod: 1,
+    lifePeriodChangePercent: null,
+    lifePeriodChangeDisplay: "--",
+    lifePeriodChangeClass: "flat",
+    lifeChartTrend: "",
+    lifeHistoryNotice: "",
     votedIndicators: {}
   },
 
@@ -125,7 +129,7 @@ Page({
       activeLifeType: type,
       currentIndicators: indicators,
       selectedIndicator: null,
-      activeRange: indicators[0].defaultRange
+      lifeChartPeriod: 1
     });
   },
 
@@ -135,21 +139,21 @@ Page({
     this.setData({
       selectedIndicator: indicator,
       showIndicatorDetail: true,
-      activeRange: indicator.defaultRange
+      lifeChartPeriod: 1
+    }, () => {
+      this.updateLifeChartState(indicator, 1);
     });
-    this.drawIndicatorChart(indicator, indicator.defaultRange);
   },
 
   closeIndicatorDetail() {
     this.setData({ showIndicatorDetail: false });
   },
 
-  switchChartRange(e) {
-    const range = Number(e.currentTarget.dataset.range);
+  changeLifeChartPeriod(e) {
+    const range = Number(e.currentTarget.dataset.period);
     const indicator = this.data.selectedIndicator;
-    if (!indicator || !indicator.history[range === 1 ? "oneYear" : range === 3 ? "threeYears" : "fiveYears"]) return;
-    this.setData({ activeRange: range });
-    this.drawIndicatorChart(indicator, range);
+    if (!indicator || [1, 3, 5].indexOf(range) < 0) return;
+    this.updateLifeChartState(indicator, range);
   },
 
   voteIndicator(e) {
@@ -172,15 +176,58 @@ Page({
 
   stopPropagation() {},
 
-  drawIndicatorChart(indicator, range) {
+  getLifeHistory(indicator) {
+    const history = indicator.history || {};
+    const values = history.fiveYears || history.threeYears || history.oneYear || [];
+    const parsedDate = parseLifeHistoryDate(indicator.dataPeriod);
+    const isYearly = indicator.updateFrequency === "每年更新" || /^\d{4}年?$/.test(indicator.dataPeriod);
+    const labels = values.map((value, index) => {
+      const date = new Date(parsedDate.year, parsedDate.month - 1, 1);
+      date.setMonth(date.getMonth() - (values.length - 1 - index) * (isYearly ? 12 : 1));
+      return isYearly ? `${date.getFullYear()}` : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    });
+    return { values, labels, isYearly };
+  },
+
+  filterLifeHistory(indicator, period) {
+    const history = this.getLifeHistory(indicator);
+    const lastDate = parseLifeHistoryDate(history.labels[history.labels.length - 1]);
+    const cutoff = new Date(lastDate.year - period, lastDate.month - 1, 1);
+    let startIndex = history.labels.findIndex(label => {
+      const date = parseLifeHistoryDate(label);
+      return new Date(date.year, date.month - 1, 1) >= cutoff;
+    });
+    if (history.isYearly && period === 1 && history.values.length >= 2) startIndex = Math.max(0, history.values.length - 2);
+    if (startIndex < 0) startIndex = 0;
+    return {
+      values: history.values.slice(startIndex),
+      labels: history.labels.slice(startIndex),
+      availableYears: history.isYearly ? history.values.length - 1 : history.values.length / 12
+    };
+  },
+
+  updateLifeChartState(indicator, period) {
+    const chartData = this.filterLifeHistory(indicator, period);
+    const change = calculateLifePeriodChange(chartData.values);
+    this.setData({
+      lifeChartPeriod: period,
+      lifePeriodChangePercent: change,
+      lifePeriodChangeDisplay: change === null ? "--" : (change > 0 ? "+" : "") + change.toFixed(1) + "%",
+      lifePeriodChangeClass: changeClass(change || 0),
+      lifeChartTrend: buildLifeTrendText(chartData.values, period),
+      lifeHistoryNotice: chartData.availableYears < period ? `目前可用历史数据不足${period}年` : ""
+    }, () => {
+      this.drawLifeChart(chartData.values, chartData.labels);
+    });
+  },
+
+  drawLifeChart(values, labels) {
     if (this.chartTimer) clearTimeout(this.chartTimer);
     this.chartTimer = setTimeout(() => {
-      const historyKey = range === 1 ? "oneYear" : range === 3 ? "threeYears" : "fiveYears";
-      const values = indicator.history[historyKey];
       const query = this.createSelectorQuery();
       query.select("#indicator-chart").fields({ node: true, size: true }).exec((result) => {
         const chart = result && result[0];
-        if (!chart || !chart.node || !this.data.showIndicatorDetail || !values || values.length < 2) return;
+        if (!chart || !chart.node || !this.data.showIndicatorDetail) return;
         const canvas = chart.node;
         const ctx = canvas.getContext("2d");
         const dpr = wx.getSystemInfoSync().pixelRatio || 1;
@@ -201,6 +248,14 @@ Page({
         ctx.clearRect(0, 0, width, height);
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(0, 0, width, height);
+        if (!values || values.length < 2) {
+          ctx.fillStyle = "#8494AD";
+          ctx.font = "12px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("暂无足够历史走势数据", width / 2, height / 2);
+          return;
+        }
         ctx.font = "10px sans-serif";
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
@@ -223,26 +278,8 @@ Page({
           const index = Math.round(i * (values.length - 1) / (labelCount - 1));
           const x = left + plotWidth * index / (values.length - 1);
           ctx.fillStyle = "#8494AD";
-          ctx.fillText(getChartLabel(range, index, values.length), x, bottom + 9);
+          ctx.fillText(labels[index], x, bottom + 9);
         }
-        const lineColor = indicator.id === "birthRate" ? "#16A36A" : "#1689F8";
-        const points = values.map(function (value, index) {
-          return {
-            x: left + plotWidth * index / (values.length - 1),
-            y: top + (max - value) / rangeValue * plotHeight
-          };
-        });
-        ctx.beginPath();
-        points.forEach(function (point, index) {
-          if (index === 0) ctx.moveTo(point.x, point.y);
-          else ctx.lineTo(point.x, point.y);
-        });
-        ctx.lineTo(points[points.length - 1].x, bottom);
-        ctx.lineTo(points[0].x, bottom);
-        ctx.closePath();
-        ctx.fillStyle = indicator.id === "birthRate" ? "rgba(22, 163, 106, 0.10)" : "rgba(22, 137, 248, 0.10)";
-        ctx.fill();
-
         ctx.beginPath();
         values.forEach(function (value, index) {
           const x = left + plotWidth * index / (values.length - 1);
@@ -250,18 +287,10 @@ Page({
           if (index === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         });
-        ctx.strokeStyle = lineColor;
+        ctx.strokeStyle = "#1689F8";
         ctx.lineWidth = 2.5;
         ctx.lineJoin = "round";
         ctx.stroke();
-        values.forEach(function (value, index) {
-          const x = left + plotWidth * index / (values.length - 1);
-          const y = top + (max - value) / rangeValue * plotHeight;
-          ctx.beginPath();
-          ctx.arc(x, y, 3, 0, Math.PI * 2);
-          ctx.fillStyle = lineColor;
-          ctx.fill();
-        });
       });
     }, 80);
   },
@@ -276,8 +305,21 @@ function formatChartValue(value) {
   return value.toFixed(value < 10 ? 2 : 0);
 }
 
-function getChartLabel(range, index, length) {
-  if (range === 1) return (index + 1) + "月";
-  if (range === 3 && length > 6) return "第" + (index + 1) + "月";
-  return (2024 - length + index) + "年";
+function parseLifeHistoryDate(label) {
+  const match = String(label || "").match(/(\d{4})(?:[-年](\d{1,2}))?/);
+  if (!match) return { year: 0, month: 1 };
+  return { year: Number(match[1]), month: Number(match[2] || 1) };
+}
+
+function calculateLifePeriodChange(values) {
+  if (!values || values.length < 2 || values[0] === 0) return null;
+  return (values[values.length - 1] - values[0]) / Math.abs(values[0]) * 100;
+}
+
+function buildLifeTrendText(values, period) {
+  const change = calculateLifePeriodChange(values);
+  if (change === null) return "目前历史数据不足，暂时无法判断这一周期的变化趋势。";
+  if (change >= 5) return `近${period}年整体有所上升，中间也有过波动。`;
+  if (change <= -5) return `近${period}年整体有所下降，中间也出现过反复。`;
+  return `近${period}年整体变化不大，期间有上升也有下降。`;
 }
