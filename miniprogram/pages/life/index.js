@@ -22,7 +22,7 @@ function prepareIndicators(list) {
 // mock data - 后续替换为官方 API 数据
 const recentIndicators = prepareIndicators([
   {
-    id: "house", name: "房价", icon: "🏠", subtitle: "上海二手房", compareText: "比上个月",
+    id: "house", name: "房价", icon: "🏠", subtitle: "新建住宅", compareText: "比上个月",
     value: "-0.5%", change: -0.5, simpleText: "比上个月便宜了一点", dataPeriod: "2026年8月",
     updateFrequency: "每月更新", source: "国家统计局", chartYears: 3,
     voteQuestion: "你觉得接下来房价会怎么走？",
@@ -107,6 +107,7 @@ const longTermIndicators = prepareIndicators([
 
 Page({
   data: {
+    city: "",
     activeLifeType: "recent",
     recentIndicators: recentIndicators,
     longTermIndicators: longTermIndicators,
@@ -120,6 +121,73 @@ Page({
     lifeChartTrend: "",
     lifeHistoryNotice: "",
     votedIndicators: {}
+  },
+
+  onShow() {
+    const city = wx.getStorageSync("selectedCity") || "北京";
+    if (city !== this.data.city) {
+      this.setData({ city: city });
+      this.loadHousePriceData(city);
+    }
+  },
+
+  updateHousePriceCard(house) {
+    const recentIndicators = this.data.recentIndicators.map(function (indicator) {
+      return indicator.id === "house" ? house : indicator;
+    });
+    const updateData = { recentIndicators: recentIndicators };
+    if (this.data.activeLifeType === "recent") updateData.currentIndicators = recentIndicators;
+    this.setData(updateData);
+  },
+
+  createUnavailableHouse(city) {
+    const house = this.data.recentIndicators.find(function (indicator) {
+      return indicator.id === "house";
+    });
+    return Object.assign({}, house, {
+      subtitle: `${city} · 新建住宅`,
+      value: "--",
+      change: "--",
+      changeText: "--",
+      changeClass: "flat",
+      simpleText: "该城市数据暂未更新",
+      dataAvailable: true
+    });
+  },
+
+  async loadHousePriceData(city) {
+    this.updateHousePriceCard(this.createUnavailableHouse(city));
+    try {
+      const result = await wx.cloud.database()
+        .collection("life_data")
+        .where({ code: "HOUSE_PRICE", city: city })
+        .limit(1)
+        .get();
+      if (city !== this.data.city) return;
+
+      const record = result.data && result.data[0];
+      if (!record || typeof record.value !== "number" || !Number.isFinite(record.value)) return;
+
+      const value = record.value;
+      const house = this.data.recentIndicators.find(function (indicator) {
+        return indicator.id === "house";
+      });
+      this.updateHousePriceCard(Object.assign({}, house, {
+        subtitle: `${city} · 新建住宅`,
+        value: `${value > 0 ? "+" : ""}${value.toFixed(1)}%`,
+        change: value,
+        changeText: `${value > 0 ? "+" : ""}${value.toFixed(1)}%`,
+        changeClass: changeClass(value),
+        simpleText: value > 0 ? "比上个月上涨了一点" : value < 0 ? "比上个月下降了一点" : "和上个月持平",
+        dataPeriod: record.sourceDate || house.dataPeriod,
+        source: record.source || house.source,
+        history: Array.isArray(record.history) ? record.history : house.history,
+        dataAvailable: true
+      }));
+    } catch (err) {
+      if (city !== this.data.city) return;
+      console.error("loadHousePriceData error:", err);
+    }
   },
 
   switchLifeType(e) {

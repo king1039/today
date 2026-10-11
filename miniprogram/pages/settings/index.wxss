@@ -1,8 +1,5 @@
 page { background: #F5FAFF; }
 .settings-page { width: 100%; padding: 30rpx 28rpx 48rpx; overflow-x: hidden; }
-.settings-title-row { display: flex; align-items: center; margin-bottom: 28rpx; }
-.settings-icon { font-size: 44rpx; margin-right: 16rpx; }
-.settings-title { color: #102A56; font-size: 40rpx; font-weight: 700; }
 .brand-card, .settings-card { background: #FFFFFF; border-radius: 24rpx; margin-bottom: 24rpx; }
 .brand-card { display: flex; align-items: center; padding: 28rpx; }
 .brand-logo { width: 120rpx; height: 120rpx; border-radius: 26rpx; margin-right: 26rpx; }
@@ -13,16 +10,9 @@ page { background: #F5FAFF; }
 .setting-row { display: flex; align-items: center; justify-content: space-between; min-height: 96rpx; padding: 0 24rpx; border-bottom: 1rpx solid #EDF3F9; color: #102A56; font-size: 29rpx; }
 .setting-row:last-child { border-bottom: 0; }
 .row-label { display: flex; align-items: center; }
-.row-label-column { display: flex; flex-direction: column; align-items: flex-start; }
 .row-icon { width: 46rpx; margin-right: 14rpx; font-size: 30rpx; text-align: center; }
-.row-help { color: #8494AD; font-size: 20rpx; margin-top: 4rpx; margin-left: 60rpx; }
 .row-value { display: flex; align-items: center; color: #526987; }
 .arrow { color: #8494AD; font-size: 42rpx; line-height: 1; margin-left: 14rpx; }
-.frequency-card { padding: 24rpx; }
-.card-title { display: block; color: #102A56; font-size: 30rpx; font-weight: 700; padding-bottom: 14rpx; }
-.frequency-row { display: flex; justify-content: space-between; padding: 13rpx 0; color: #526987; font-size: 24rpx; }
-.frequency-row text:last-child { color: #8494AD; }
-.frequency-tip { display: block; color: #8494AD; font-size: 20rpx; line-height: 1.5; margin-top: 12rpx; }
 .compact-card { overflow: hidden; }
 .sheet-layer { position: fixed; z-index: 20; left: 0; right: 0; top: 0; bottom: 0; }
 .mask { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: rgba(16, 42, 86, .32); }
